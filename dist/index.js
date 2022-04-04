@@ -10,6 +10,8 @@ const lineReader = __webpack_require__(631);
 const fs = __webpack_require__(747);
 
 try {
+    const regex = /(\w+_test.go:\d+:)/g; // Extracts file name and line where test failures occurred
+
 	const testResultsPath = core.getInput('test-results');
 	const customPackageName = core.getInput('package-name');
 
@@ -56,10 +58,13 @@ try {
 	lr.on('end', function() {
 		for (const [key, value] of Object.entries(obj)) {
 			if (value.includes("FAIL") && value.includes("_test.go")) {
-				const parts = value.split("%0A")[1].trim().split(":");
-				const file = key.split("/").slice(0, -1).join("/") + "/" + parts[0];
-				const lineNumber = parts[1];
-				core.info(`::error file=${file},line=${lineNumber}::${value}`)
+				const result = regex.exec(value);
+				if (result != null) {
+					const parts = result[0].split(":");
+					const file = parts[0]
+					const lineNumber = parts[1];
+					core.info(`::error file=${file},line=${lineNumber}::${value}`)
+				}
 			}
 		}
 	});
